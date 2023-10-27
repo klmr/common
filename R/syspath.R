@@ -57,9 +57,7 @@ Sys.path <- function() {
     debug <- options("common.debug")[[1]]
   }
 
-  # Get list of installed packages
-  si <- sessionInfo()
-  pkglst <- names(si$otherPkgs)
+  pkglst <- loadedNamespaces()
 
   # Assign debugSource.  This is used when running RStudio in debug mode.
   debugSource <- if (.Platform$GUI == "RStudio")
@@ -159,12 +157,12 @@ Sys.path <- function() {
     }
 
     if ("box" %in% pkglst) {
-      if (identical(sys.function(n), box::use)) {
-        tryCatch({
+      mod_ns <- box::topenv(parent.frame())
 
-          ret <- box::file(mustWork = FALSE)
-
-        }, error = function(e) {ret <- NULL})
+      # The following is relying on implementation details of the 'box'
+      # package, but these implementation details are stable and won't change.
+      if (inherits(mod_ns, "box$ns")) {
+        ret <- mod_ns$.__module__.$info$source_path
 
         if (debug)
           message("box::use() call identified:" %p% ret)
@@ -191,7 +189,7 @@ Sys.path <- function() {
       if (debug)
         message("source call found:" %p% ret)
 
-      break()
+      break
 
     }
   }
